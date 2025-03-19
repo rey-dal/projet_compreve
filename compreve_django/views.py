@@ -762,6 +762,21 @@ def export_filtered_csv(request):
     writer = csv.writer(response)
     writer.writerow(["User", "Message", "Message ID", "Timestamp", "Uptime", "Status", "Is Moderated", "Sanction", "Duration", "Moderation Uptime", "Moderation Start Time"])
 
+    writer.writerow(['FILTRES SÉLECTIONNÉS'])
+    writer.writerow(['Date d\'export', datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+    if query_params['searchMessage']:
+        writer.writerow(['Message', query_params['searchMessage']])
+    if query_params['searchUser']:
+        writer.writerow(['Utilisateur', query_params['searchUser']])
+    if filters.get('modere'):
+        writer.writerow(['Modéré', filters['modere']])
+    if filters.get('supprime'):
+        writer.writerow(['Supprimé', filters['supprime']])
+    if filters.get('status'):
+        writer.writerow(['Status', filters['status']])
+    writer.writerow(['Tri', sort_by])
+    writer.writerow([])  # Empty row for spacing
+
     for msg in messages:
         writer.writerow([
             msg.user,
@@ -897,6 +912,22 @@ def export_global_filtered_json(request):
     except json.JSONDecodeError:
         filters = {}
 
+    # Create filter information
+    filter_info = {
+        "exportInfo": {
+            "dateExport": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "filtres": {
+                "message": search_message if search_message else None,
+                "utilisateur": search_user if search_user else None,
+                "modere": filters.get('modere'),
+                "supprime": filters.get('supprime'),
+                "status": filters.get('status'),
+                "chaines": channels if channels else None,
+                "tri": sort_by
+            }
+        }
+    }
+
     # Get messages with their channels
     streaminfo_subquery = StreamInfo.objects.filter(
         uploaded_file=OuterRef('uploaded_file')
@@ -961,8 +992,9 @@ def export_global_filtered_json(request):
     else:
         messages = messages.order_by(sort_by)
 
-    # Prepare export data
+    # Prepare export data with filter information at the top
     data = {
+        **filter_info,  # Add filter information at the top
         "allMessages": [
             {
                 "user": msg.user,
@@ -1002,78 +1034,77 @@ def export_global_filtered_csv(request):
     except json.JSONDecodeError:
         filters = {}
 
-    # Get messages with their channels
-    streaminfo_subquery = StreamInfo.objects.filter(
-        uploaded_file=OuterRef('uploaded_file')
-    ).values('channel')[:1]
+    messages = TwitchMessage.objects.all()
 
-    messages = TwitchMessage.objects.annotate(
-        channel=Subquery(streaminfo_subquery)
-    )
 
-    # Apply channel filtering
     if channels:
         print(f"Selected channels: {channels}")  # Debug log
-        messages = messages.filter(channel__in=[ch.strip() for ch in channels]).distinct()  # Strip whitespace
+        messages = messages.filter(uploaded_file__streaminfo__channel__in=channels).distinct()  # Strip whitespace
         print(f"Total messages after channel filter: {messages.count()}")  # Debug log
 
-    # Apply moderation filter
-    if filters.get('modere') in ['true', 'false']:
+    if filters.get('modere'):
         messages = messages.filter(is_moderated=(filters['modere'] == 'true'))
 
-    # Apply deletion filter
-    if filters.get('supprime') in ['true', 'false']:
+    if filters.get('supprime'):
         if filters['supprime'] == 'true':
             messages = messages.filter(sanction="Deleted")
-        else:
+        elif filters['supprime'] == 'false':
             messages = messages.exclude(sanction="Deleted")
 
-    # Apply status filter
-    if filters.get('status'):
+    if filters.get('status') and filters['status'].lower() != "all":
         selected_status = filters['status'].strip("[]'")
         messages = messages.filter(status__icontains=f'"{selected_status}"')
 
-    # Apply search filters
     if search_message:
         messages = messages.filter(message__icontains=search_message)
+
     if search_user:
         messages = messages.filter(user__icontains=search_user)
 
-    # Apply sorting
-    valid_sort_fields = ['id', 'message', 'user', 'timestamp', 'uptime', 'is_moderated', 'sanction', 'duration', 'status', 'moderation_starttime', 'moderation_uptime', 'channel']
+    valid_sort_fields = ['id', 'message', 'user', 'timestamp', 'uptime', 'is_moderated', 'sanction', 'duration', 'status']
     sort_field = sort_by.lstrip('-')
 
     if sort_field not in valid_sort_fields:
-        sort_by = '-timestamp'
+        sort_by = 'timestamp'
 
-    if sort_field == "duration":
-        messages = messages.annotate(
-            duration_int=Case(
-                When(duration="lifetime", then=Value(9999999)),
-                default=Cast('duration', IntegerField()),
-                output_field=IntegerField(),
-            )
-        ).order_by('-duration_int' if sort_by.startswith('-') else 'duration_int')
-    elif sort_field == "channel":
-        # Get the latest channel for each message before sorting
-        messages = messages.annotate(
-            latest_channel=Subquery(
-                StreamInfo.objects.filter(
-                    timestamp__lte=OuterRef('timestamp')
-                ).order_by('-timestamp').values('channel')[:1]
-            )
-        ).order_by(f"{'-' if sort_by.startswith('-') else ''}latest_channel")
-    else:
-        messages = messages.order_by(sort_by)
+    messages = messages.order_by(sort_by)
 
-    # Prepare CSV response
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="filtered_messages.csv"'
-
-    writer = csv.writer(response)
-    writer.writerow(['User', 'Message', 'Message ID', 'Timestamp', 'Uptime', 'Status', 'Is Moderated', 'Sanction', 'Duration', 'Moderation Uptime', 'Moderation Start Time', 'Channel'])
-
+    # Suivre les identifiants de message uniques pour éviter les doublons
+    unique_message_ids = set()
+    unique_messages = []
     for msg in messages:
+        if msg.message_id not in unique_message_ids:
+            unique_message_ids.add(msg.message_id)
+            unique_messages.append(msg)
+
+    # Préparer le fichier CSV
+    csv_file_name = "filtered_messages"
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="{csv_file_name}.csv"'
+    # Créer un objet writer pour écrire dans le fichier CSV
+    writer = csv.writer(response)
+    writer.writerow(["User", "Message", "Message ID", "Timestamp", "Uptime", "Status", "Is Moderated", "Sanction", "Duration", "Moderation Uptime", "Moderation Start Time", "Channel"])
+    
+    writer.writerow(['FILTRES SÉLECTIONNÉS'])
+    writer.writerow(['Date d\'export', datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+    if search_message:
+        writer.writerow(['Message', search_message])
+    if search_user:
+        writer.writerow(['Utilisateur', search_user])
+    if filters.get('modere'):
+        writer.writerow(['Modéré', filters['modere']])
+    if filters.get('supprime'):
+        writer.writerow(['Supprimé', filters['supprime']])
+    if filters.get('status'):
+        writer.writerow(['Status', filters['status']])
+    if channels:
+        writer.writerow(['Chaînes', ', '.join(channels)])
+    writer.writerow(['Tri', sort_by])
+    writer.writerow([])  # Empty row for spacing
+    
+    # Écrire les données des messages dans le fichier CSV
+    for msg in unique_messages:
+        channel = StreamInfo.objects.filter(uploaded_file=msg.uploaded_file).first().channel if msg.uploaded_file else 'Unknown'
         writer.writerow([
             msg.user,
             msg.message,
@@ -1086,7 +1117,7 @@ def export_global_filtered_csv(request):
             msg.duration,
             msg.moderation_uptime,
             msg.moderation_starttime,
-            msg.channel
+            channel
         ])
 
     return response
@@ -1115,9 +1146,7 @@ def export_global_filtered_xml(request):
 
     # Apply channel filtering
     if channels:
-        print(f"Selected channels: {channels}")  # Debug log
-        messages = messages.filter(channel__in=[ch.strip() for ch in channels]).distinct()  # Strip whitespace
-        print(f"Total messages after channel filter: {messages.count()}")  # Debug log
+        messages = messages.filter(channel__in=[ch.strip() for ch in channels]).distinct()
 
     # Apply moderation filter
     if filters.get('modere') in ['true', 'false']:
@@ -1168,12 +1197,34 @@ def export_global_filtered_xml(request):
     else:
         messages = messages.order_by(sort_by)
 
-    # Create XML structure
-    root = ET.Element('messages')
+    root = ET.Element('data')
     
+    # Add export information at the top
+    export_info = ET.SubElement(root, 'exportInfo')
+    ET.SubElement(export_info, 'dateExport').text = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Add filter information
+    filtres = ET.SubElement(export_info, 'filtres')
+    if search_message:
+        ET.SubElement(filtres, 'message').text = search_message
+    if search_user:
+        ET.SubElement(filtres, 'utilisateur').text = search_user
+    if filters.get('modere'):
+        ET.SubElement(filtres, 'modere').text = filters['modere']
+    if filters.get('supprime'):
+        ET.SubElement(filtres, 'supprime').text = filters['supprime']
+    if filters.get('status'):
+        ET.SubElement(filtres, 'status').text = filters['status']
+    if channels:
+        chaines = ET.SubElement(filtres, 'chaines')
+        for channel in channels:
+            ET.SubElement(chaines, 'chaine').text = channel
+    ET.SubElement(filtres, 'tri').text = sort_by
+
+    # Add messages
+    messages_element = ET.SubElement(root, 'messages')
     for msg in messages:
-        message = ET.SubElement(root, 'message')
-        
+        message = ET.SubElement(messages_element, 'message')
         ET.SubElement(message, 'user').text = str(msg.user)
         ET.SubElement(message, 'content').text = str(msg.message)
         ET.SubElement(message, 'messageId').text = str(msg.message_id)
@@ -1187,20 +1238,12 @@ def export_global_filtered_xml(request):
         ET.SubElement(message, 'moderationStarttime').text = str(msg.moderation_starttime)
         ET.SubElement(message, 'channel').text = str(msg.channel)
 
-    # Convert to string with proper formatting
+    # Create the XML string with proper formatting
     xml_str = minidom.parseString(ET.tostring(root)).toprettyxml(indent="  ")
     
-    # Create response
     response = HttpResponse(xml_str, content_type='application/xml')
     response['Content-Disposition'] = 'attachment; filename="filtered_messages.xml"'
-    
     return response
-
-"""
-    Vue Django pour exporter tous les messages filtrés au format CSV.
-    Cette vue permet de récupérer tous les messages Twitch, d'appliquer des filtres et des tris,
-    puis de préparer les données pour être téléchargées sous forme de fichier CSV.
-"""
 
 def export_global_filtered_csv(request):
     # Récupérer les paramètres de recherche et de tri depuis la requête GET
@@ -1264,12 +1307,25 @@ def export_global_filtered_csv(request):
     response['Content-Disposition'] = f'attachment; filename="{csv_file_name}.csv"'
     # Créer un objet writer pour écrire dans le fichier CSV
     writer = csv.writer(response)
-    writer.writerow([
-        "User", "Message", "Message ID", "Timestamp", "Uptime", "Status",
-        "Is Moderated", "Sanction", "Duration", "Moderation Uptime",
-        "Moderation Start Time", "Channel"
-    ])
-
+    writer.writerow(["User", "Message", "Message ID", "Timestamp", "Uptime", "Status", "Is Moderated", "Sanction", "Duration", "Moderation Uptime", "Moderation Start Time", "Channel"])
+    
+    writer.writerow(['FILTRES SÉLECTIONNÉS'])
+    writer.writerow(['Date d\'export', datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+    if search_message:
+        writer.writerow(['Message', search_message])
+    if search_user:
+        writer.writerow(['Utilisateur', search_user])
+    if filters.get('modere'):
+        writer.writerow(['Modéré', filters['modere']])
+    if filters.get('supprime'):
+        writer.writerow(['Supprimé', filters['supprime']])
+    if filters.get('status'):
+        writer.writerow(['Status', filters['status']])
+    if channels:
+        writer.writerow(['Chaînes', ', '.join(channels)])
+    writer.writerow(['Tri', sort_by])
+    writer.writerow([])  # Empty row for spacing
+    
     # Écrire les données des messages dans le fichier CSV
     for msg in unique_messages:
         channel = StreamInfo.objects.filter(uploaded_file=msg.uploaded_file).first().channel if msg.uploaded_file else 'Unknown'

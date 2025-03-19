@@ -56,12 +56,14 @@ COMPREVE is a Django-based web application designed for analyzing Twitch chat me
   - XML
 - Preserve all applied filters in exports
 - Download complete or filtered datasets
+- Display of filters and sort before and after export
 
 #### 5. User Interface
 - Clean and intuitive design
 - Responsive layout
 - Easy-to-use filter controls
 - Clear data presentation
+- One-click copy functionality for messages and usernames
 
 ### Installation
 
@@ -151,12 +153,14 @@ COMPREVE est une application web basée sur Django conçue pour analyser les cha
   - XML
 - Conservation de tous les filtres appliqués dans les exports
 - Téléchargement des ensembles de données complets ou filtrés
+- Affichage des filtres et du tri avant et après l'exportation
 
 #### 5. Interface utilisateur
 - Design épuré et intuitif
 - Mise en page responsive
 - Contrôles de filtrage faciles à utiliser
 - Présentation claire des données
+- Copie rapide des messages et noms d'utilisateur en un clic
 
 ### Installation
 

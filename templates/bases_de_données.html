@@ -671,11 +671,9 @@
                     searchParams.set('searchUser', userSearch);
                 }
                 
-                // Add sort field if it exists
-                const sortField = $('.sort-header.active').data('field');
-                if (sortField) {
-                    const sortDirection = $('.sort-header.active').hasClass('asc') ? '' : '-';
-                    searchParams.set('sort', sortDirection + sortField);
+                // Add sort from state
+                if (state.sort) {
+                    searchParams.set('sort', state.sort);
                 }
                 
                 // Get the streamer name from the filename
@@ -683,14 +681,32 @@
                 const streamerName = fullFilename.split('_')[0];
                 searchParams.set('file', fullFilename);
 
+                // Create filter summary
+                let filterSummary = 'Filtres sélectionnés:\n';
+                if (messageSearch) filterSummary += `- Message: ${messageSearch}\n`;
+                if (userSearch) filterSummary += `- Utilisateur: ${userSearch}\n`;
+                if (filters.modere !== '') filterSummary += `- Modéré: ${filters.modere}\n`;
+                if (filters.supprime !== '') filterSummary += `- Supprimé: ${filters.supprime}\n`;
+                if (filters.status) filterSummary += `- Status: ${filters.status}\n`;
+                if (state.sort) {
+                    const field = state.sort.startsWith('-') ? state.sort.slice(1) : state.sort;
+                    const direction = state.sort.startsWith('-') ? 'Descendant' : 'Ascendant';
+                    filterSummary += `- Tri: ${direction} par ${field}\n`;
+                }
+
+                // Show confirmation with filter summary
+                if (!confirm(filterSummary + `\nTélécharger au format ${format.toUpperCase()} ?`)) {
+                    return;
+                }
+
                 // Use the appropriate export endpoint based on the format
                 let downloadUrl;
                 if (format === 'json') {
-                    downloadUrl = `/export_filtered_json/?${searchParams.toString()}`;
+                    downloadUrl = `/export_global_filtered_json/?${searchParams.toString()}`;
                 } else if (format === 'csv') {
-                    downloadUrl = `/export_filtered_csv/?${searchParams.toString()}`;
+                    downloadUrl = `/export_global_filtered_csv/?${searchParams.toString()}`;
                 } else if (format === 'xml') {
-                    downloadUrl = `/export_filtered_xml/?${searchParams.toString()}`;
+                    downloadUrl = `/export_global_filtered_xml/?${searchParams.toString()}`;
                 }
 
                 // Make the download request
@@ -712,8 +728,8 @@
                         a.remove();
                     })
                     .catch(error => {
-                        console.error('Download failed:', error);
-                        alert('Le téléchargement a échoué. Veuillez réessayer.');
+                        console.error('Error downloading file:', error);
+                        alert('Une erreur est survenue lors du téléchargement du fichier.');
                     });
             }
 

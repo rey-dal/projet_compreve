@@ -283,6 +283,12 @@
             color: #6b43c7;
         }
 
+        .message-cell, .user-cell {
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+            position: relative;
+        }
+
         .message-cell {
             max-width: 400px;
             padding-right: 20px;
@@ -295,6 +301,16 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        .message-cell:hover, .user-cell:hover {
+            color: rgba(107, 67, 199, 1);
+            background-color: rgba(107, 67, 199, 0.1);
+        }
+
+        .message-cell.copied, .user-cell.copied {
+            color: rgba(107, 67, 199, 1);
+            background-color: rgba(107, 67, 199, 0.2);
         }
 
         .status-cell {
@@ -506,39 +522,77 @@
                     selectedChannels.push($(this).val());
                 });
 
-                // Build the export URL with all current parameters
-                const params = new URLSearchParams();
-                
-                if (searchMessageQuery) params.set('searchMessage', searchMessageQuery);
-                if (searchUserQuery) params.set('searchUser', searchUserQuery);
-                if (currentSort) params.set('sort', currentSort);
-
-                // Add non-empty filters
-                const nonEmptyFilters = Object.fromEntries(
-                    Object.entries(filters).filter(([_, v]) => v !== '')
-                );
-                if (Object.keys(nonEmptyFilters).length > 0) {
-                    params.set('filters', JSON.stringify(nonEmptyFilters));
+                // Create filter summary
+                let filterSummary = 'Filtres sélectionnés:\n';
+                if (searchMessageQuery) filterSummary += `- Message: ${searchMessageQuery}\n`;
+                if (searchUserQuery) filterSummary += `- Utilisateur: ${searchUserQuery}\n`;
+                if (filters.modere) filterSummary += `- Modéré: ${filters.modere}\n`;
+                if (filters.supprime) filterSummary += `- Supprimé: ${filters.supprime}\n`;
+                if (filters.status) filterSummary += `- Status: ${filters.status}\n`;
+                if (selectedChannels.length > 0) filterSummary += `- Chaînes: ${selectedChannels.join(', ')}\n`;
+                if (currentSort) {
+                    const field = currentSort.startsWith('-') ? currentSort.slice(1) : currentSort;
+                    const direction = currentSort.startsWith('-') ? 'Descendant' : 'Ascendant';
+                    filterSummary += `- Tri: ${direction} par ${field}\n`;
                 }
 
-                // Add selected channels
-                selectedChannels.forEach(channel => {
-                    params.append('channels', channel);
-                });
+                // Show confirmation with filter summary
+                if (confirm(filterSummary + `\nTélécharger au format ${format.toUpperCase()} ?`)) {
+                    // Build the export URL with all current parameters
+                    const params = new URLSearchParams();
+                        
+                    if (searchMessageQuery) params.set('searchMessage', searchMessageQuery);
+                    if (searchUserQuery) params.set('searchUser', searchUserQuery);
+                    if (currentSort) params.set('sort', currentSort);
 
-                // Determine export URL based on format
-                let url;
-                if (format === 'json') {
-                    url = '/export_global_filtered_json/';
-                } else if (format === 'csv') {
-                    url = '/export_global_filtered_csv/';
-                } else if (format === 'xml') {
-                    url = '/export_global_filtered_xml/';
+                    // Add non-empty filters
+                    const nonEmptyFilters = Object.fromEntries(
+                        Object.entries(filters).filter(([_, v]) => v !== '')
+                    );
+                    if (Object.keys(nonEmptyFilters).length > 0) {
+                        params.set('filters', JSON.stringify(nonEmptyFilters));
+                    }
+
+                    // Add selected channels
+                    selectedChannels.forEach(channel => {
+                        params.append('channels', channel);
+                    });
+
+                    // Determine export URL based on format
+                    let url;
+                    if (format === 'json') {
+                        url = '/export_global_filtered_json/';
+                    } else if (format === 'csv') {
+                        url = '/export_global_filtered_csv/';
+                    } else if (format === 'xml') {
+                        url = '/export_global_filtered_xml/';
+                    }
+
+                    // Trigger the download with all parameters
+                    window.location.href = `${url}?${params.toString()}`;
                 }
-
-                // Trigger the download with all parameters
-                window.location.href = `${url}?${params.toString()}`;
             }
+
+            // Add click handlers for copying message and user cells
+            $(document).on('click', '.message-cell', function() {
+                const text = $(this).text();
+                navigator.clipboard.writeText(text).then(() => {
+                    $(this).addClass('copied');
+                    setTimeout(() => {
+                        $(this).removeClass('copied');
+                    }, 2000);
+                });
+            });
+
+            $(document).on('click', '.user-cell', function() {
+                const text = $(this).text();
+                navigator.clipboard.writeText(text).then(() => {
+                    $(this).addClass('copied');
+                    setTimeout(() => {
+                        $(this).removeClass('copied');
+                    }, 2000);
+                });
+            });
         });
     </script>
 </head>
