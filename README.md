@@ -34,20 +34,19 @@ COMPREVE is a Django-based web application designed for analyzing Twitch chat me
 - Data validation and processing
 
 #### 2. Search and Analysis
-- Advanced search functionality for messages and users
-- Multi-channel filtering
+- Search functionality for messages and users
 - Sort messages by various criteria:
   - Timestamp
   - Username
   - Message content
   - Moderation status
-- Pagination
+  - Channel
 
 #### 3. Filtering Options
 - Filter by moderation status
 - Filter by message status
-- Channel-specific filtering
-- Combined filters for precise results
+- Channel-specific or multi-channel filtering
+- Combined filters
 
 #### 4. Data Export
 - Export filtered results in multiple formats:
@@ -131,20 +130,18 @@ COMPREVE est une application web basée sur Django conçue pour analyser les cha
 - Validation et traitement des données
 
 #### 2. Recherche et analyse
-- Fonctionnalité de recherche avancée pour les messages et les utilisateurs
-- Filtrage multi-chaînes
+- Fonctionnalité de recherche pour les messages et les utilisateurs
 - Tri des messages selon différents critères :
   - Horodatage
   - Nom d'utilisateur
   - Contenu du message
   - Statut de modération
-- Pagination 
+  - Chaîne
 
 #### 3. Options de filtrage
 - Filtrage par statut de modération
-- Filtrage par statut de message
-- Filtrage par chaîne spécifique
-- Filtres combinés 
+- Filtrage par statut de message 
+- Filtrage multi-chaînes ou par chaîne spécifique
 
 #### 4. Export de données
 - Export des résultats filtrés dans plusieurs formats :
