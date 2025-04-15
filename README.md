@@ -111,18 +111,22 @@ COMPREVE est une application web basée sur Django conçue pour analyser les cha
 
 #### Page de connexion
 ![Page de Connexion](screenshots/login.png)
+![Page de Connexion 2](screenshots/login2.png)
 *Interface d'authentification utilisateur*
 
 #### Gestion des fichiers
 ![Page des Fichiers](screenshots/fichiers.png)
+![Page des Fichiers 2](screenshots/fichiers2.png)
 *Gestion des fichiers JSON (rechercher, télécharger, visualiser, supprimer)*
 
 #### Aperçu de la base de données
 ![Page de la Base de Données](screenshots/base_de_donnees.png)
+![Page de la Base de Données 2](screenshots/base_de_donnees2.png)
 *Analyser (rechercher, filtrer, trier, télécharger) le fichier sélectionné*
 
 #### Recherche et analyse
 ![Page de Recherche](screenshots/recherche.png)
+![Page de Recherche 2](screenshots/recherche2.png)
 *Analyser (rechercher, filtrer, trier, télécharger) les messages de chat de tous les fichiers*
 
 ### Fonctionnalités
