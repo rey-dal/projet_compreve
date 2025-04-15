@@ -1,0 +1,978 @@
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COMPREVE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #f8f9fa, #f1f3f5);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #333333;
+        }
+
+        .top-menu {
+            background: linear-gradient(to right, #fafafa, #f5f5f5);
+            padding: 1.2rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 2rem;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(200, 200, 200, 0.8);
+            border-bottom: 3px solid #9b7ae7;
+            align-items: center;
+        }
+
+        .menu-item {
+            padding: 0.7rem 1.2rem;
+            color: #444444;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+            font-weight: 500;
+            overflow: hidden;
+        }
+        
+        .menu-item.active {
+            position: relative;
+        }
+        
+        .menu-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #9b7ae7;
+        }
+        
+        .menu-item:hover {
+            background: rgba(138, 108, 217, 0.1);
+        }
+
+        .search-and-filters {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            padding: 0 20px;
+        }
+
+        .search-container {
+            margin: 0 10px;
+            background: linear-gradient(to bottom, #ffffff, #f9fafc);
+            padding: 24px;
+            border-radius: 12px;
+            width: 85%;
+            margin-left: -15px;
+            margin-top: 0;
+            margin-bottom: 0;
+            border: 1px solid rgba(224, 224, 224, 0.7);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .search-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-inputs {
+            display: flex;
+            gap: 10px;
+            flex-grow: 1;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            flex: 1;
+        }
+
+        .search-input-message,
+        .search-input-user {
+            width: 100%;
+            padding: 12px 40px 12px 16px;
+            border: 1px solid rgba(107, 67, 199, 0.3);
+            border-radius: 8px;
+            font-size: 1rem;
+            background: linear-gradient(to bottom, #ffffff, #fcfcff);
+            color: #333333;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05) inset;
+        }
+
+        .search-input-message:focus,
+        .search-input-user:focus {
+            border-color: #6b43c7;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(107, 67, 199, 0.15);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 1rem;
+            margin-left: auto;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: linear-gradient(to bottom, #ffffff, #f9fafc);
+            min-width: 200px;
+            box-shadow: 0px 8px 20px 0px rgba(0,0,0,0.08);
+            z-index: 9999;
+            border-radius: 8px;
+            padding: 8px;
+            right: 0;
+            border: 1px solid rgba(224, 224, 224, 0.7);
+        }
+
+        .dropdown-content a, .dropdown-content label {
+            color: #333333;
+            padding: 10px 16px;
+            text-decoration: none;
+            display: block;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin: 4px 0;
+            font-weight: 500;
+        }
+
+        .dropdown-content a:hover, .dropdown-content label:hover {
+            background-color: rgba(107, 67, 199, 0.1);
+            transform: translateX(4px);
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block !important;
+        }
+
+        .filter-group {
+            margin: 8px 0;
+            padding: 0 12px;
+        }
+
+        .filter-group select {
+            width: 100%;
+            padding: 10px 12px;
+            margin-top: 6px;
+            background: #ffffff;
+            border: 1px solid rgba(107, 67, 199, 0.5);
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05) inset;
+            transition: all 0.3s ease;
+            color: #000000;
+        }
+
+
+        .filter-btn, .export-btn {
+            padding: 15px 20px;
+            background-color: #8a6cd9;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            white-space: nowrap;
+        }
+        
+        .filter-btn:hover, .export-btn:hover {
+            background-color: #4a2b8f;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .main-container {
+            display: flex;
+            gap: 2rem;
+            align-items: flex-start;
+            justify-content: flex-start;
+            width: 100%;
+        }
+
+        .grid-item input[type="checkbox"] {
+            margin-left: auto;
+            cursor: pointer;
+            transform: scale(0.9);
+        }
+
+        .sort-header {
+            cursor: pointer;
+            transition: background-color 0.3s;
+            position: relative;
+            padding-right: 2rem;
+        }
+        
+        .sort-header:hover {
+            background-color: rgba(107, 67, 199, 0.1);
+        }
+
+        .sort-header::after {
+            content: "▾";
+            position: absolute;
+            right: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #808080;
+            font-size: 1.2em;
+        }
+
+        .sort-header.asc::after {
+            content: "▴";
+            color: #6b43c7;
+        }
+
+        .sort-header.desc::after {
+            content: "▾";
+            color: #6b43c7;
+        }
+
+        .id-cell {
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .id-cell:hover {
+            color: rgba(107, 67, 199, 1);
+            background-color: rgba(107, 67, 199, 0.1);
+        }
+
+        .id-cell.copied {
+            color: rgba(107, 67, 199, 1);
+            background-color: rgba(107, 67, 199, 0.2);
+        }
+
+        .user-cell {
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .user-cell:hover {
+            color: rgba(107, 67, 199, 1);
+            background-color: rgba(107, 67, 199, 0.1);
+        }
+
+        .user-cell.copied {
+            color: rgba(107, 67, 199, 1);
+            background-color: rgba(107, 67, 199, 0.2);
+        }
+
+        .message-cell {
+            cursor: pointer;
+            min-width: 500px;
+            max-width: none;
+            overflow: visible;
+            white-space: normal;
+            word-wrap: break-word;
+            transition: background-color 0.3s, color 0.3s;
+            position: relative;
+            line-height: 1.5;
+        }
+
+        .message-cell:hover {
+            color: rgba(107, 67, 199, 1);
+            background-color: rgba(107, 67, 199, 0.1);
+        }
+
+        .message-cell.copied {
+            color: rgba(107, 67, 199, 1);
+            background-color: rgba(107, 67, 199, 0.2);
+        }
+
+        .status-cell {
+            white-space: normal !important;
+            overflow: visible !important;
+            width: 150px;
+            padding: 10px !important;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: linear-gradient(to right, rgba(107, 67, 199, 0.15), rgba(107, 67, 199, 0.25));
+            margin: 2px;
+            color: #333333;
+            white-space: nowrap;
+            font-weight: 500;
+            font-size: 0.85rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            margin: 20px 0;
+            border-radius: 16px;
+            background: #fafafa;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+            border: 1px solid #e0e0e0;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: #fafafa;
+            color: #000000;
+            font-size: 1rem;
+            min-width: 1200px;
+        }
+
+        .data-table th {
+            background-color: #e0e0e0;
+            color: #000000;
+            padding: 12px;
+            text-align: left;
+            font-weight: 500;
+            font-size: 1rem;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background-color: #f5f5f5;
+        }
+
+        .data-table tbody tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(138, 108, 217, 0.1);
+        }
+
+        .data-table td {
+            padding: 0.8rem;
+            border-bottom: 1px solid rgba(200, 200, 200, 0.3);
+            color: #000000;
+            border-right: none;
+        }
+
+        /* Styles for clickable message and user cells */
+        .message-cell, .user-cell {
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .message-cell:hover, .user-cell:hover {
+            color: #000000;
+            background-color: rgba(128, 128, 128, 0.15) !important;
+        }
+
+        .message-cell.copied, .user-cell.copied {
+            color: #000000;
+            background-color: rgba(128, 128, 128, 0.25) !important;
+        }
+
+        .data-table th[data-field="message"] {
+            width: 45%;
+            min-width: 500px;
+        }
+
+        .data-table th[data-field="user"] {
+            width: 8%;
+        }
+
+        .data-table th[data-field="timestamp"] {
+            width: 8%;
+        }
+
+        .data-table th[data-field="uptime"] {
+            width: 8%;
+        }
+
+        .data-table th[data-field="is_moderated"] {
+            width: 8%;
+        }
+
+        .data-table th[data-field="sanction"] {
+            width: 8%;
+        }
+
+        .data-table th[data-field="duration"] {
+            width: 8%;
+        }
+
+        .data-table th[data-field="status"] {
+            width: 10%;
+        }
+
+
+        .pagination {
+            margin-top: 0.8rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.3rem;
+        }
+
+        .page-btn {
+            background: #f5f5f5;
+            color: #444444;
+            border: 1px solid #e0e0e0;
+            padding: 0.45rem 0.9rem;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s, border-color 0.3s;
+            font-size: 1rem;
+        }
+        
+        .page-link {
+            background: #f5f5f5;
+            color: #444444;
+            border: 1px solid #e0e0e0;
+            padding: 0.45rem 0.9rem;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s, border-color 0.3s;
+            font-size: 1rem;
+        }
+
+        .page-btn:hover {
+            background: rgba(128, 128, 128, 0.2);
+            border-color: #a0a0a0;
+        }
+        
+        .page-link:hover {
+            background: rgba(128, 128, 128, 0.2);
+            border-color: #a0a0a0;
+        }
+
+        .page-btn.active {
+            background-color: #8a6cd9;
+            color: white;
+            border-color: #8a6cd9;
+        }
+
+        .current-page {
+            background-color: #8a6cd9;
+            color: white;
+            border-color: #8a6cd9;
+            padding: 0.45rem 0.9rem;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .file-info {
+            background: linear-gradient(to bottom, #ffffff, #f9fafc);
+            padding: 15px 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            display: inline-block;
+            width: 84%;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(224, 224, 224, 0.7);
+        }
+
+        .file-info h3 {
+            color: #333333;
+            margin: 0;
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 1200px) {
+            .data-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            const config = {
+                defaultPage: parseInt('{{ current_page|default:1 }}', 10),
+                defaultSort: '{{ sort_by|default:"-timestamp" }}',
+                searchDelay: 500,
+                copyTimeout: 2000,
+                paginationRange: 2,
+                filters: JSON.parse('{{ filters|default:"{}" }}')
+            };
+
+            const state = {
+                page: config.defaultPage,
+                sort: config.defaultSort,
+                searchTimeout: null,
+                filters: config.filters
+            };
+
+            function getUrlParams() {
+                const params = new URLSearchParams(window.location.search);
+                return {
+                    searchMessage: params.get('searchMessage') || '',
+                    searchUser: params.get('searchUser') || '',
+                    sort: params.get('sort') || config.defaultSort,
+                    page: parseInt(params.get('page'), 10) || config.defaultPage,
+                    filters: JSON.parse(params.get('filters') || '{}')
+                };
+            }
+
+            function updateUrlAndLoadMessages(page) {
+                const searchMessageQuery = $('.search-input-message').val();
+                const searchUserQuery = $('.search-input-user').val();
+                const filters = {
+                    modere: $('#filter-moderated').val(),
+                    supprime: $('#filter-deleted').val(),
+                    status: $('#filter-status').val() ? $('#filter-status').val().replace(/[\[\]']/g, '') : ''
+                };
+
+                const params = {
+                    searchMessage: searchMessageQuery,
+                    searchUser: searchUserQuery,
+                    sort: state.sort,
+                    page: page,
+                    filters: JSON.stringify(filters)
+                };
+
+                const url = new URL(window.location.href);
+                Object.keys(params).forEach(function(key) {
+                    if (params[key]) {
+                        url.searchParams.set(key, params[key]);
+                    } else {
+                        url.searchParams.delete(key);
+                    }
+                });
+                window.history.pushState({}, '', url.toString());
+
+                loadMessages(page);
+            }
+
+            function loadMessages(page) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('page', page);
+
+                $.ajax({
+                    url: url.toString(),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(response) {
+                        if (response && response.messages) {
+                            updateTable(response.messages);
+                            updatePagination(response);
+                            state.page = page;
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Failed to load messages:', error);
+                    }
+                });
+            }
+
+            function updateSortHeaders() {
+                $('.sort-header').removeClass('asc desc');
+                if (state.sort) {
+                    const field = state.sort.startsWith('-') ? state.sort.slice(1) : state.sort;
+                    const direction = state.sort.startsWith('-') ? 'desc' : 'asc';
+                    $(`.sort-header[data-field="${field}"]`).addClass(direction);
+                }
+            }
+
+            function updateTable(messages) {
+                const tbody = $('.data-table tbody');
+                tbody.empty();
+
+                if (!Array.isArray(messages)) {
+                    console.error('Invalid messages data');
+                    return;
+                }
+
+                messages.forEach(function(msg) {
+                    const statusHtml = Array.isArray(msg.status)
+                        ? msg.status.map(status => `<span class="status-badge">${status}</span>`).join(' ')
+                        : (msg.status ? `<span class="status-badge">${msg.status}</span>` : '');
+
+                    const row = `
+                        <tr>
+                            <td class="message-cell" onclick="copyMessage(this, '${msg.message || ''}')" title="${msg.message || ''}">${msg.message || ''}</td>
+                            <td class="user-cell" onclick="copyUser(this, '${msg.user || ''}')" title="${msg.user || ''}">${msg.user || ''}</td>
+                            <td>${msg.timestamp || ''}</td>
+                            <td>${msg.uptime || ''}</td>
+                            <td>${msg.is_moderated === true ? 'true' : 'false'}</td>
+                            <td>${msg.sanction === null ? 'null' : msg.sanction}</td>
+                            <td>${msg.duration === null ? 'null' : msg.duration}</td>
+                            <td class="status-cell">${statusHtml}</td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+            }
+
+            function updatePagination(data) {
+                const pagination = $('.pagination');
+                pagination.empty();
+                
+                if (data.has_previous) {
+                    pagination.append(`<a href="#" class="page-link" onclick="loadPage(1); return false;">«</a>`);
+                    pagination.append(`<a href="#" class="page-link" onclick="loadPage(${data.current_page - 1}); return false;">‹</a>`);
+                }
+                
+                const startPage = Math.max(1, data.current_page - 2);
+                const endPage = Math.min(data.total_pages, data.current_page + 2);
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    if (i === data.current_page) {
+                        pagination.append(`<span class="current-page">${i}</span>`);
+                    } else {
+                        pagination.append(`<a href="#" class="page-link" onclick="loadPage(${i}); return false;">${i}</a>`);
+                    }
+                }
+                
+                if (data.has_next) {
+                    pagination.append(`<a href="#" class="page-link" onclick="loadPage(${data.current_page + 1}); return false;">›</a>`);
+                    pagination.append(`<a href="#" class="page-link" onclick="loadPage(${data.total_pages}); return false;">»</a>`);
+                }
+            }
+
+            window.loadPage = function(page) {
+                updateUrlAndLoadMessages(Math.max(1, parseInt(page, 10) || 1));
+            };
+
+            window.copyUser = function(element, user) {
+                if (!user) return;
+                navigator.clipboard.writeText(user).then(function() {
+                    element.classList.add('copied');
+                    setTimeout(function() {
+                        element.classList.remove('copied');
+                    }, 2000);
+                }).catch(function(error) {
+                    console.error('Failed to copy user:', error);
+                });
+            };
+
+            window.copyMessage = function(element, message) {
+                navigator.clipboard.writeText(message).then(() => {
+                    element.classList.add('copied');
+                    setTimeout(() => {
+                        element.classList.remove('copied');
+                    }, 2000);
+                });
+            };
+
+            // Event listeners
+            $('.sort-header').click(function() {
+                const field = $(this).data('field');
+                state.sort = state.sort === field ? `-${field}` : field;
+                updateSortHeaders();
+                updateUrlAndLoadMessages(1);
+            });
+
+            $('#filter-moderated, #filter-deleted, #filter-status').change(function() {
+                updateUrlAndLoadMessages(1);
+            });
+
+            $('.search-input-message, .search-input-user').on('input', function() {
+                clearTimeout(state.searchTimeout);
+                state.searchTimeout = setTimeout(function() {
+                    updateUrlAndLoadMessages(1);
+                }, config.searchDelay);
+            });
+
+            $('.search-input-message, .search-input-user').on('keypress', function(e) {
+                if (e.which === 13) {
+                    clearTimeout(state.searchTimeout);
+                    updateUrlAndLoadMessages(1);
+                }
+            });
+
+            function exportData(format) {
+                const currentUrl = new URL(window.location.href);
+                const searchParams = new URLSearchParams(currentUrl.search);
+                
+                // Get all current filters from the page
+                const filters = {
+                    modere: $('#filter-moderated').val(),
+                    supprime: $('#filter-deleted').val(),
+                    status: $('#filter-status').val()
+                };
+
+                // Add filters to search params
+                searchParams.set('filters', JSON.stringify(filters));
+                
+                // Add search terms if they exist
+                const messageSearch = $('#search-message').val();
+                if (messageSearch) {
+                    searchParams.set('searchMessage', messageSearch);
+                }
+                
+                const userSearch = $('#search-user').val();
+                if (userSearch) {
+                    searchParams.set('searchUser', userSearch);
+                }
+                
+                // Add sort from state
+                if (state.sort) {
+                    searchParams.set('sort', state.sort);
+                }
+                
+                // Get the streamer name from the filename
+                const fullFilename = '{{ filename }}';
+                const streamerName = fullFilename.split('_')[0];
+                searchParams.set('file', fullFilename);
+
+                // Create filter summary
+                let filterSummary = 'Filtres sélectionnés:\n';
+                if (messageSearch) filterSummary += `- Message: ${messageSearch}\n`;
+                if (userSearch) filterSummary += `- Utilisateur: ${userSearch}\n`;
+                if (filters.modere !== '') filterSummary += `- Modéré: ${filters.modere}\n`;
+                if (filters.supprime !== '') filterSummary += `- Supprimé: ${filters.supprime}\n`;
+                if (filters.status) filterSummary += `- Status: ${filters.status}\n`;
+                if (state.sort) {
+                    const field = state.sort.startsWith('-') ? state.sort.slice(1) : state.sort;
+                    const direction = state.sort.startsWith('-') ? 'Descendant' : 'Ascendant';
+                    filterSummary += `- Tri: ${direction} par ${field}\n`;
+                }
+
+                // Show confirmation with filter summary
+                if (!confirm(filterSummary + `\nTélécharger au format ${format.toUpperCase()} ?`)) {
+                    return;
+                }
+
+                // Use the appropriate export endpoint based on the format
+                let downloadUrl;
+                if (format === 'json') {
+                    downloadUrl = `/export_global_filtered_json/?${searchParams.toString()}`;
+                } else if (format === 'csv') {
+                    downloadUrl = `/export_global_filtered_csv/?${searchParams.toString()}`;
+                } else if (format === 'xml') {
+                    downloadUrl = `/export_global_filtered_xml/?${searchParams.toString()}`;
+                }
+
+                // Make the download request
+                fetch(downloadUrl)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${streamerName}_filtered.${format}`;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        a.remove();
+                    })
+                    .catch(error => {
+                        console.error('Error downloading file:', error);
+                        alert('Une erreur est survenue lors du téléchargement du fichier.');
+                    });
+            }
+
+            // Event listeners for export buttons
+            $('#export-btn').click(function(e) {
+                e.preventDefault();
+                exportData('json');
+            });
+
+            $('#export-csv-btn').click(function(e) {
+                e.preventDefault();
+                exportData('csv');
+            });
+
+            $('#export-xml-btn').click(function(e) {
+                e.preventDefault();
+                exportData('xml');
+            });
+
+            // Initialize
+            const urlParams = getUrlParams();
+            state.sort = urlParams.sort;
+            state.page = urlParams.page;
+            $('.search-input-message').val(urlParams.searchMessage);
+            $('.search-input-user').val(urlParams.searchUser);
+            $('#filter-moderated').val(urlParams.filters.modere || '');
+            $('#filter-deleted').val(urlParams.filters.supprime || '');
+            $('#filter-status').val(urlParams.filters.status || '');
+            updateSortHeaders();
+            loadMessages(state.page);
+
+            window.addEventListener('popstate', function() {
+                const params = getUrlParams();
+                state.sort = params.sort;
+                state.page = params.page;
+                loadMessages(state.page);
+            });
+        });
+    </script>
+</head>
+<body>
+    <nav class="top-menu">
+        <h2>COMPREVE</h2>
+        <a href="{% url 'fichiers' %}" class="menu-item">Fichiers</a>
+        <a href="{% url 'recherche' %}" class="menu-item">Recherche</a>
+    </nav>
+
+    {% if filename %}
+    <div class="file-info">
+        <h3>{{ filename }}</h3>
+    </div>
+    {% endif %}
+
+    <div class="search-and-filters">
+        <div class="search-container">
+            <div class="search-group">
+                <div class="search-inputs">
+                    <div class="search-input-wrapper">
+                        <input type="text" class="search-input-message" placeholder="Rechercher un message..." value="{{ search_query }}">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    <div class="search-input-wrapper">
+                        <input type="text" class="search-input-user" placeholder="Rechercher un utilisateur..." value="{{ search_user }}">
+                        <i class="fas fa-user search-icon"></i>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <div class="dropdown">
+                        <button class="filter-btn">Filtrer</button>
+                        <div class="dropdown-content">
+                            <div class="filter-group">
+                                <label for="filter-moderated">Modéré</label>
+                                <select id="filter-moderated">
+                                    <option value="">Tous</option>
+                                    <option value="true">Oui</option>
+                                    <option value="false">Non</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="filter-deleted">Supprimé</label>
+                                <select id="filter-deleted">
+                                    <option value="">Tous</option>
+                                    <option value="true">Oui</option>
+                                    <option value="false">Non</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="filter-status">Status</label>
+                                <select id="filter-status">
+                                    <option value="">Tous</option>
+                                    {% for status in all_statuses %}
+                                    <option value="{{ status }}">{{ status }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dropdown">
+                        <button class="export-btn">Télécharger</button>
+                        <div class="dropdown-content">
+                            <a id="export-btn" href="#">Télécharger en JSON</a>
+                            <a id="export-csv-btn" href="#">Télécharger en CSV</a>
+                            <a id="export-xml-btn" href="#">Télécharger en XML</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="sort-header" data-field="message">Message</th>
+                    <th class="sort-header" data-field="user">Utilisateur</th>
+                    <th class="sort-header" data-field="timestamp">Timestamp</th>
+                    <th class="sort-header" data-field="uptime">Uptime</th>
+                    <th class="sort-header" data-field="is_moderated">Modération</th>
+                    <th class="sort-header" data-field="sanction">Sanction</th>
+                    <th class="sort-header" data-field="duration">Durée</th>
+                    <th class="sort-header" data-field="status">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for message in messages %}
+                <tr>
+                    <td class="message-cell" onclick="copyMessage(this, '{{ message.message }}')" title="{{ message.message }}">{{ message.message }}</td>
+                    <td class="user-cell" onclick="copyUser(this, '{{ message.user }}')" title="{{ message.user }}">{{ message.user }}</td>
+                    <td>{{ message.timestamp }}</td>
+                    <td>{{ message.uptime|default:'Inconnu' }}</td>
+                    <td>{{ message.is_moderated|yesno:"true,false" }}</td>
+                    <td>{% if message.sanction == None %}null{% else %}{{ message.sanction }}{% endif %}</td>
+                    <td>{% if message.duration == None %}null{% else %}{{ message.duration }}{% endif %}</td>
+                    <td class="status-cell">
+                        {% if message.status %}
+                            {% with status_list=message.status|parse_list %}
+                                {% for status in status_list %}
+                                    <span class="status-badge">{{ status }}</span>
+                                {% endfor %}
+                            {% endwith %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination">
+        {% if messages.has_previous %}
+            <a href="?page=1" class="page-link">«</a>
+            <a href="?page={{ messages.previous_page_number }}" class="page-link">‹</a>
+        {% endif %}
+        
+        {% for i in page_range %}
+            {% if i == messages.number %}
+                <span class="current-page">{{ i }}</span>
+            {% else %}
+                <a href="?page={{ i }}" class="page-link">{{ i }}</a>
+            {% endif %}
+        {% endfor %}
+        
+        {% if messages.has_next %}
+            <a href="?page={{ messages.next_page_number }}" class="page-link">›</a>
+            <a href="?page={{ messages.paginator.num_pages }}" class="page-link">»</a>
+        {% endif %}
+    </div>
+</body>
+</html>

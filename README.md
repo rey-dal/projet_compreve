@@ -11,18 +11,22 @@ COMPREVE is a Django-based web application designed for analyzing Twitch chat me
 
 #### Login Page
 ![Login Page](screenshots/login.png)
+![Login Page 2](screenshots/login2.png)
 *User authentication interface*
 
 #### Files Management
 ![Files Page](screenshots/fichiers.png)
+![Files Page 2](screenshots/fichiers2.png)
 *Manage JSON files (search, upload, delete)*
 
 #### Database Overview
 ![Database Page](screenshots/base_de_donnees.png)
+![Database Page 2](screenshots/base_de_donnees2.png)
 *Analyse (search, filter, sort, download) the choosen chat file*
 
 #### Search and Analysis
 ![Search Page](screenshots/recherche.png)
+![Search Page 2](screenshots/recherche2.png)
 *Analyse (search, filter, sort, download) chat messages across all channels*
 
 ### Features

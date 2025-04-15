@@ -1,0 +1,812 @@
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COMPREVE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #f0f2f5, #e9ecef);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #333333;
+        }
+
+        .top-menu {
+            background: linear-gradient(to right, #fafafa, #f5f5f5);
+            padding: 1.2rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 2rem;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(200, 200, 200, 0.8);
+            border-bottom: 3px solid #9b7ae7;
+            align-items: center;
+        }
+
+        .menu-item {
+            padding: 0.7rem 1.2rem;
+            color: #444444;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+            font-weight: 500;
+            overflow: hidden;
+        }
+        
+        .menu-item.active {
+            position: relative;
+        }
+        
+        .menu-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #8a6cd9;
+        }
+        
+        .menu-item:hover {
+            background: rgba(138, 108, 217, 0.1);
+        }
+
+        .search-bars-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 2rem;
+            position: sticky;
+            top: 1rem;
+            z-index: 100;
+        }
+
+        .search-bar-message {
+            background: #fafafa;
+            padding: 1.2rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+            display: flex;
+            gap: 1.2rem;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #e0e0e0;
+            width: 95%;
+            max-width: 1400px;
+            margin: 0 auto 1rem auto;
+        }
+        
+        .search-bar-message:hover {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .search-inputs {
+            display: flex;
+            gap: 1.2rem;
+            flex-grow: 1;
+            max-width: 80%;
+        }
+
+        .search-input-message, .search-input-user {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(107, 67, 199, 0.3);
+            border-radius: 8px;
+            background: #fafafa;
+            color: #333333;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05) inset;
+            font-size: 1rem;
+        }
+
+        .search-input-message:focus, .search-input-user:focus {
+            border-color: #6b43c7;
+            box-shadow: 0 0 0 3px rgba(107, 67, 199, 0.15);
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .filter-btn, .export-btn {
+            padding: 15px 20px;
+            background-color: #8a6cd9;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            white-space: nowrap;
+        }
+        
+        .filter-btn:hover, .export-btn:hover {
+            background-color: #4a2b8f;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #ffffff;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1);
+            z-index: 1000;
+            border-radius: 4px;
+            padding: 8px;
+            right: 0;
+            pointer-events: auto;
+            margin-top: -5px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .dropdown-content a, .dropdown-content label {
+            color: #000000;
+            padding: 8px 12px;
+            text-decoration: none;
+            display: block;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+            cursor: pointer;
+        }
+
+        .dropdown-content a:hover, .dropdown-content label:hover {
+            background-color: rgba(107, 67, 199, 0.1);
+        }
+
+        .dropdown-content.show {
+            display: block;
+        }
+
+        .filter-group {
+            margin: 8px 0;
+            padding: 0 12px;
+        }
+
+        .filter-group select {
+            width: 100%;
+            padding: 6px;
+            margin-top: 4px;
+            background: #ffffff;
+            border: 1px solid #9147ff;
+            color: #000000;
+            border-radius: 4px;
+        }
+
+        .channel-options {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 8px;
+            padding-right: 8px;
+        }
+        
+        .channel-option {
+            display: flex;
+            align-items: center;
+            padding: 4px 0;
+        }
+        
+        .channel-option input {
+            margin-right: 8px;
+        }
+
+        .channel-options::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .channel-options::-webkit-scrollbar-track {
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+
+        .channel-options::-webkit-scrollbar-thumb {
+            background: #6b43c7;
+            border-radius: 4px;
+        }
+
+        .channel-options::-webkit-scrollbar-thumb:hover {
+            background: #5632a8;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .data-table {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 1rem;
+            width: 95%;
+            max-width: 1400px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            border-radius: 12px;
+        }
+
+        .data-table th {
+            padding: 0.8rem;
+            text-align: left;
+            font-weight: 600;
+            color: #000000;
+            cursor: pointer;
+            transition: color 0.3s;
+            background-color: #e0e0e0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table thead tr:first-child th:first-child {
+            border-top-left-radius: 8px;
+        }
+
+        .data-table thead tr:first-child th:last-child {
+            border-top-right-radius: 8px;
+        }
+
+        .data-table tbody tr:last-child td:first-child {
+            border-bottom-left-radius: 8px;
+        }
+
+        .data-table tbody tr:last-child td:last-child {
+            border-bottom-right-radius: 8px;
+        }
+
+        .data-table tbody tr {
+            transition: background-color 0.3s;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background-color: #f5f5f5;
+        }
+
+        .data-table tbody tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(138, 108, 217, 0.1);
+        }
+
+        .data-table td {
+            padding: 0.8rem;
+            border-bottom: 1px solid rgba(200, 200, 200, 0.3);
+            color: #000000;
+            border-right: none;
+        }
+
+        .sort-header {
+            position: relative;
+            cursor: pointer;
+            padding-right: 20px !important;
+        }
+        
+        .sort-header::after {
+            content: '▼';
+            font-size: 0.6rem;
+            margin-left: 5px;
+            opacity: 0.3;
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .sort-header:hover {
+            background-color: rgba(107, 67, 199, 0.1);
+        }
+        
+        .sort-header:hover::after {
+            opacity: 0.6;
+        }
+        
+        .sort-header.asc::after {
+            content: '▲';
+            opacity: 1;
+            color: #6b43c7;
+        }
+        
+        .sort-header.desc::after {
+            content: '▼';
+            opacity: 1;
+            color: #6b43c7;
+        }
+
+        .message-cell, .user-cell {
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+            position: relative;
+        }
+
+        .message-cell {
+            max-width: 400px;
+            padding-right: 20px;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        .user-cell {
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .message-cell:hover, .user-cell:hover {
+            color: #000000;
+            background-color: rgba(128, 128, 128, 0.15);
+        }
+
+        .message-cell.copied, .user-cell.copied {
+            color: #000000;
+            background-color: rgba(128, 128, 128, 0.25);
+        }
+
+        .status-cell {
+            white-space: normal !important;
+            overflow: visible !important;
+            width: 150px;
+            padding: 10px !important;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: rgba(107, 67, 199, 0.2);
+            margin: 2px;
+            color: #333333;
+            white-space: nowrap;
+            font-weight: 500;
+            font-size: 0.85rem;
+            }
+
+        .pagination {
+            margin-top: 0.8rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.3rem;
+        }
+
+        .page-btn {
+            background: #f5f5f5;
+            color: #444444;
+            border: 1px solid #e0e0e0;
+            padding: 0.45rem 0.9rem;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s, border-color 0.3s;
+            font-size: 1rem;
+        }
+
+        .page-btn:hover {
+            background: rgba(128, 128, 128, 0.2);
+            border-color: #a0a0a0;
+        }
+
+        .page-btn.active {
+            background-color: #8a6cd9;
+            color: white;
+            border-color: #8a6cd9;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: #000000;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            let currentSort = '{{ request.GET.sort|default:"-timestamp"|escapejs }}';
+
+            // Initialize sort headers on page load
+            initializeFromUrl();
+
+            // Handle Enter key in search inputs
+            $('.search-input-message, .search-input-user').on('keypress', function(e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    submitSearch();
+                }
+            });
+
+            function submitSearch() {
+                const searchMessageQuery = $('.search-input-message').val();
+                const searchUserQuery = $('.search-input-user').val();
+                const filters = {
+                    modere: $('#filter-modere').val(),
+                    supprime: $('#filter-supprime').val(),
+                    status: $('#filter-status').val()
+                };
+
+                // Get selected channels
+                const selectedChannels = [];
+                $('.item-checkbox:checked').each(function() {
+                    const channel = $(this).val();
+                    if (channel) {
+                        selectedChannels.push(channel);
+                    }
+                });
+
+                const params = new URLSearchParams();
+                
+                if (searchMessageQuery) {
+                    params.set('searchMessage', searchMessageQuery);
+                }
+                
+                if (searchUserQuery) {
+                    params.set('searchUser', searchUserQuery);
+                }
+                
+                if (currentSort) {
+                    params.set('sort', currentSort);
+                }
+                
+                const nonEmptyFilters = Object.fromEntries(
+                    Object.entries(filters).filter(([_, v]) => v !== '')
+                );
+                
+                if (Object.keys(nonEmptyFilters).length > 0) {
+                    params.set('filters', JSON.stringify(nonEmptyFilters));
+                }
+
+                // Add each selected channel as a separate parameter
+                if (selectedChannels.length > 0) {
+                    selectedChannels.forEach(channel => {
+                        params.append('channels', channel);
+                    });
+                }
+
+                params.set('page', '1');
+                
+                // Use the current path to maintain any existing route
+                const currentPath = window.location.pathname;
+                window.location.href = `${currentPath}?${params.toString()}`;
+            }
+
+            // Handle form submission
+            $('#search-form').on('submit', function(e) {
+                e.preventDefault();
+                submitSearch();
+            });
+
+            // Handle filter changes
+            $('#filter-modere, #filter-supprime, #filter-status').on('change', function() {
+                submitSearch();
+            });
+
+            // Handle checkbox changes
+            $('.item-checkbox').on('change', function() {
+                submitSearch();
+            });
+
+            // Handle sort header clicks
+            $('.sort-header').on('click', function() {
+                const field = $(this).data('field');
+                const isAsc = $(this).hasClass('asc');
+                
+                // Remove all sort classes first
+                $('.sort-header').removeClass('asc desc');
+                
+                // Add appropriate class to clicked header
+                $(this).addClass(isAsc ? 'desc' : 'asc');
+                
+                currentSort = isAsc ? `-${field}` : field;
+                $('#sort-field').val(currentSort);
+                
+                submitSearch();
+            });
+
+            // Initialize sort headers
+            function initializeFromUrl() {
+                const params = new URLSearchParams(window.location.search);
+                const sortParam = params.get('sort') || '-timestamp';  // Default to -timestamp if no sort parameter
+                
+                if (sortParam) {
+                    const field = sortParam.startsWith('-') ? sortParam.substring(1) : sortParam;
+                    const direction = sortParam.startsWith('-') ? 'desc' : 'asc';
+                    const header = $(`.sort-header[data-field="${field}"]`);
+                    
+                    if (header.length) {
+                        header.addClass(direction);
+                    }
+                }
+            }
+
+            // Initialize dropdowns
+            $('.dropdown-toggle').on('mouseenter', function() {
+                $(this).siblings('.dropdown-content').addClass('show');
+            });
+
+            $('.dropdown').on('mouseleave', function() {
+                $(this).find('.dropdown-content').removeClass('show');
+            });
+
+            // Handle export buttons
+            $('#exportJsonBtn').on('click', function(e) {
+                e.preventDefault();
+                exportData('json');
+            });
+
+            $('#exportCsvBtn').on('click', function(e) {
+                e.preventDefault();
+                exportData('csv');
+            });
+
+            $('#exportXmlBtn').on('click', function(e) {
+                e.preventDefault();
+                exportData('xml');
+            });
+
+            function exportData(format) {
+                // Get current search and filter parameters
+                const searchMessageQuery = $('.search-input-message').val();
+                const searchUserQuery = $('.search-input-user').val();
+                const filters = {
+                    modere: $('#filter-modere').val(),
+                    supprime: $('#filter-supprime').val(),
+                    status: $('#filter-status').val()
+                };
+
+                // Get selected channels
+                const selectedChannels = [];
+                $('.item-checkbox:checked').each(function() {
+                    selectedChannels.push($(this).val());
+                });
+
+                // Create filter summary
+                let filterSummary = 'Filtres sélectionnés:\n';
+                if (searchMessageQuery) filterSummary += `- Message: ${searchMessageQuery}\n`;
+                if (searchUserQuery) filterSummary += `- Utilisateur: ${searchUserQuery}\n`;
+                if (filters.modere) filterSummary += `- Modéré: ${filters.modere}\n`;
+                if (filters.supprime) filterSummary += `- Supprimé: ${filters.supprime}\n`;
+                if (filters.status) filterSummary += `- Status: ${filters.status}\n`;
+                if (selectedChannels.length > 0) filterSummary += `- Chaînes: ${selectedChannels.join(', ')}\n`;
+                if (currentSort) {
+                    const field = currentSort.startsWith('-') ? currentSort.slice(1) : currentSort;
+                    const direction = currentSort.startsWith('-') ? 'Descendant' : 'Ascendant';
+                    filterSummary += `- Tri: ${direction} par ${field}\n`;
+                }
+
+                // Show confirmation with filter summary
+                if (confirm(filterSummary + `\nTélécharger au format ${format.toUpperCase()} ?`)) {
+                    // Build the export URL with all current parameters
+                    const params = new URLSearchParams();
+                        
+                    if (searchMessageQuery) params.set('searchMessage', searchMessageQuery);
+                    if (searchUserQuery) params.set('searchUser', searchUserQuery);
+                    if (currentSort) params.set('sort', currentSort);
+
+                    // Add non-empty filters
+                    const nonEmptyFilters = Object.fromEntries(
+                        Object.entries(filters).filter(([_, v]) => v !== '')
+                    );
+                    if (Object.keys(nonEmptyFilters).length > 0) {
+                        params.set('filters', JSON.stringify(nonEmptyFilters));
+                    }
+
+                    // Add selected channels
+                    selectedChannels.forEach(channel => {
+                        params.append('channels', channel);
+                    });
+
+                    // Determine export URL based on format
+                    let url;
+                    if (format === 'json') {
+                        url = '/export_global_filtered_json/';
+                    } else if (format === 'csv') {
+                        url = '/export_global_filtered_csv/';
+                    } else if (format === 'xml') {
+                        url = '/export_global_filtered_xml/';
+                    }
+
+                    // Trigger the download with all parameters
+                    window.location.href = `${url}?${params.toString()}`;
+                }
+            }
+
+            // Add click handlers for copying message and user cells
+            $(document).on('click', '.message-cell', function() {
+                const text = $(this).text();
+                navigator.clipboard.writeText(text).then(() => {
+                    $(this).addClass('copied');
+                    setTimeout(() => {
+                        $(this).removeClass('copied');
+                    }, 2000);
+                });
+            });
+
+            $(document).on('click', '.user-cell', function() {
+                const text = $(this).text();
+                navigator.clipboard.writeText(text).then(() => {
+                    $(this).addClass('copied');
+                    setTimeout(() => {
+                        $(this).removeClass('copied');
+                    }, 2000);
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <nav class="top-menu">
+        <h2>COMPREVE</h2>
+        <a href="{% url 'fichiers' %}" class="menu-item">Fichiers</a>
+        <a href="{% url 'recherche' %}" class="menu-item">Recherche</a>
+    </nav>
+
+    {% if filename %}
+    <div class="file-info">
+        <h3>{{ filename }}</h3>
+    </div>
+    {% endif %}
+
+    <form id="search-form" action="/recherche/" method="get">
+        <!-- Hidden input for sort field -->
+        <input type="hidden" id="sort-field" name="sort" value="{{ request.GET.sort|default:'-timestamp' }}">
+        <div class="search-bars-container">
+            <div class="search-bar-message">
+                <div class="search-inputs">
+                    <input type="text" class="search-input-message" name="searchMessage" placeholder="Rechercher un message..." value="{{ search_query }}">
+                    <input type="text" class="search-input-user" name="searchUser" placeholder="Rechercher un utilisateur..." value="{{ search_user }}">
+                </div>
+                <div class="button-group">
+                    <div class="dropdown" style="margin-right: 10px;">
+                        <button type="button" class="filter-btn dropdown-toggle">Filtrer</button>
+                        <div class="dropdown-content">
+                            <div class="filter-group">
+                                <label for="filter-modere">Modéré</label>
+                                <select id="filter-modere" name="filters[modere]">
+                                    <option value="">Tous</option>
+                                    <option value="true" {% if filters.modere == 'true' %}selected{% endif %}>Oui</option>
+                                    <option value="false" {% if filters.modere == 'false' %}selected{% endif %}>Non</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="filter-supprime">Supprimé</label>
+                                <select id="filter-supprime" name="filters[supprime]">
+                                    <option value="">Tous</option>
+                                    <option value="true" {% if filters.supprime == 'true' %}selected{% endif %}>Oui</option>
+                                    <option value="false" {% if filters.supprime == 'false' %}selected{% endif %}>Non</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="filter-status">Status</label>
+                                <select id="filter-status" name="filters[status]">
+                                    <option value="">Tous</option>
+                                    {% for status in all_statuses %}
+                                    <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Chaînes</label>
+                                <div class="channel-options">
+                                    {% for channel in all_channels %}
+                                    <label class="channel-option">
+                                        <input type="checkbox" class="item-checkbox" name="channels" value="{{ channel }}" {% if channel in selected_channels %}checked{% endif %}>
+                                        <span>{{ channel }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button type="button" class="filter-btn dropdown-toggle">Télécharger</button>
+                        <div class="dropdown-content">
+                            <a href="#" id="exportJsonBtn">Télécharger en JSON</a>
+                            <a href="#" id="exportCsvBtn">Télécharger en CSV</a>
+                            <a href="#" id="exportXmlBtn">Télécharger en XML</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="main-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="sort-header" data-field="channel" style="width: 120px;">Channel</th>
+                    <th class="sort-header" data-field="message" style="width: 400px;">Message</th>
+                    <th class="sort-header" data-field="user" style="width: 120px;">Utilisateur</th>
+                    <th class="sort-header" data-field="timestamp" style="width: 140px;">Timestamp</th>
+                    <th class="sort-header" data-field="uptime" style="width: 120px;">Uptime</th>
+                    <th class="sort-header" data-field="is_moderated" style="width: 140px;">Modération</th>
+                    <th class="sort-header" data-field="sanction" style="width: 120px;">Sanction</th>
+                    <th class="sort-header" data-field="duration" style="width: 120px;">Durée</th>
+                    <th class="sort-header" data-field="status" style="width: 140px;">Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for msg in messages %}
+                <tr>
+                    <td>{{ msg.channel }}</td>
+                    <td class="message-cell" title="{{ msg.message }}">{{ msg.message }}</td>
+                    <td class="user-cell" title="{{ msg.user }}">{{ msg.user }}</td>
+                    <td>{{ msg.timestamp }}</td>
+                    <td>{{ msg.uptime }}</td>
+                    <td style="width: 120px;">{% if msg.is_moderated == True %}true{% elif msg.is_moderated == False %}false{% else %}null{% endif %}</td>
+                    <td>{% if msg.sanction == None %}null{% else %}{{ msg.sanction }}{% endif %}</td>
+                    <td>{% if msg.duration == None %}null{% else %}{{ msg.duration }}{% endif %}</td>
+                    <td class="status-cell">
+                        {% if msg.status %}
+                            {% for status in msg.status %}
+                                <span class="status-badge">{{ status }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="no-results">Aucun message trouvé</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="pagination">
+            {% if messages.has_previous %}
+                <a href="?page=1{% if search_query %}&searchMessage={{ search_query|urlencode }}{% endif %}{% if search_user %}&searchUser={{ search_user|urlencode }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}{% if filters_str %}&filters={{ filters_str|urlencode }}{% endif %}{% for channel in selected_channels %}&channels={{ channel|urlencode }}{% endfor %}" class="page-btn first">«</a>
+                <a href="?page={{ messages.previous_page_number }}{% if search_query %}&searchMessage={{ search_query|urlencode }}{% endif %}{% if search_user %}&searchUser={{ search_user|urlencode }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}{% if filters_str %}&filters={{ filters_str|urlencode }}{% endif %}{% for channel in selected_channels %}&channels={{ channel|urlencode }}{% endfor %}" class="page-btn prev">‹</a>
+            {% endif %}
+            
+            {% with ''|center:messages.paginator.num_pages as range %}
+            {% for _ in range %}
+                {% with forloop.counter as i %}
+                    {% if i|add:"-2" <= messages.number and i|add:"2" >= messages.number %}
+                        {% if i == messages.number %}
+                            <span class="page-btn active">{{ i }}</span>
+                        {% else %}
+                            <a href="?page={{ i }}{% if search_query %}&searchMessage={{ search_query|urlencode }}{% endif %}{% if search_user %}&searchUser={{ search_user|urlencode }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}{% if filters_str %}&filters={{ filters_str|urlencode }}{% endif %}{% for channel in selected_channels %}&channels={{ channel|urlencode }}{% endfor %}" class="page-btn">{{ i }}</a>
+                        {% endif %}
+                    {% endif %}
+                {% endwith %}
+            {% endfor %}
+            {% endwith %}
+            
+            {% if messages.has_next %}
+                <a href="?page={{ messages.next_page_number }}{% if search_query %}&searchMessage={{ search_query|urlencode }}{% endif %}{% if search_user %}&searchUser={{ search_user|urlencode }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}{% if filters_str %}&filters={{ filters_str|urlencode }}{% endif %}{% for channel in selected_channels %}&channels={{ channel|urlencode }}{% endfor %}" class="page-btn next">›</a>
+                <a href="?page={{ messages.paginator.num_pages }}{% if search_query %}&searchMessage={{ search_query|urlencode }}{% endif %}{% if search_user %}&searchUser={{ search_user|urlencode }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}{% if filters_str %}&filters={{ filters_str|urlencode }}{% endif %}{% for channel in selected_channels %}&channels={{ channel|urlencode }}{% endfor %}" class="page-btn last">»</a>
+            {% endif %}
+        </div>
+    </div>
+    </form>
+    <div class="main-container">
+</body>
+</html>
